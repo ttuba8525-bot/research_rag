@@ -93,3 +93,119 @@ class PaperAnalysisRAG:
                 )
 
         return "\n\n".join(output)
+            # ----------------------------------------------------
+    # COMPARATIVE ANALYSIS
+    # ----------------------------------------------------
+
+    def generate_comparative_matrix(self, target_aspect):
+
+        context_blocks = []
+
+        for paper, sections in self.parsed_papers.items():
+
+            context_blocks.append(f"========== {paper} ==========")
+
+            for section_name, content in sections.items():
+
+                context_blocks.append(
+                    f"[{section_name}]\n{content[:800]}"
+                )
+
+        context = "\n\n".join(context_blocks)
+
+        prompt = f"""
+You are an expert academic researcher.
+
+Compare all uploaded papers based on:
+
+{target_aspect}
+
+Generate a Markdown comparison table having these columns:
+
+| Paper | Methodology | Dataset | Model | Results | Limitations |
+
+After the table provide:
+
+1. Similarities
+2. Differences
+3. Overall observations
+
+Only use the supplied paper content.
+
+Paper Context:
+
+{context[:12000]}
+"""
+
+        response = self.llm.invoke(prompt)
+
+        return response.content
+
+    # ----------------------------------------------------
+    # RESEARCH GAP ANALYSIS
+    # ----------------------------------------------------
+
+    def identify_research_gaps(self):
+
+        summaries = []
+
+        for paper, sections in self.parsed_papers.items():
+
+            text = ""
+
+            text += sections.get(
+                "Discussion & Gaps",
+                ""
+            )
+
+            text += "\n"
+
+            text += sections.get(
+                "Conclusion",
+                ""
+            )
+
+            text += "\n"
+
+            text += sections.get(
+                "Methodology",
+                ""
+            )
+
+            summaries.append(
+
+                f"Paper: {paper}\n\n{text[:2500]}"
+
+            )
+
+        context = "\n\n-------------------------\n\n".join(
+            summaries
+        )
+
+        prompt = f"""
+You are an experienced research reviewer.
+
+Analyze all uploaded papers.
+
+Identify:
+
+1. Common assumptions
+
+2. Common limitations
+
+3. Existing research gaps
+
+4. Future research opportunities
+
+5. Three novel research ideas
+
+Return the answer in proper Markdown.
+
+Paper Information:
+
+{context}
+"""
+
+        response = self.llm.invoke(prompt)
+
+        return response.content
