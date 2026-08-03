@@ -205,6 +205,135 @@ Paper Information:
 
 {context}
 """
+            # ----------------------------------------------------
+    # RAG QUESTION ANSWERING
+    # ----------------------------------------------------
+
+    def query_rag(self, query, selected_section="All"):
+
+        if self.vector_store is None:
+            return "Please ingest papers first."
+
+        # ---------------------------------------------
+        # Retrieve Relevant Chunks
+        # ---------------------------------------------
+
+        if selected_section == "All":
+
+            docs = self.vector_store.similarity_search(
+                query,
+                k=4
+            )
+
+        else:
+
+            docs = self.vector_store.similarity_search(
+                query,
+                k=6,
+                filter={
+                    "section": selected_section
+                }
+            )
+
+        # ---------------------------------------------
+        # Build Context
+        # ---------------------------------------------
+
+        context = ""
+
+        for doc in docs:
+
+            context += (
+                f"\n\n"
+                f"Paper : {doc.metadata['paper']}\n"
+                f"Section : {doc.metadata['section']}\n\n"
+                f"{doc.page_content}\n"
+            )
+
+        # ---------------------------------------------
+        # Prompt
+        # ---------------------------------------------
+
+        prompt = f"""
+You are an expert academic research assistant.
+
+Answer ONLY using the supplied paper excerpts.
+
+If the answer is not available in the supplied papers,
+reply:
+
+"I couldn't find this information in the uploaded papers."
+
+Question:
+
+{query}
+
+Paper Context:
+
+{context}
+
+Provide
+
+• Detailed Answer
+
+• Evidence from papers
+
+• Paper Name
+
+• Section Name
+
+Use Markdown formatting.
+"""
+
+        response = self.llm.invoke(prompt)
+
+        return response.content
+
+    # ----------------------------------------------------
+    # Retrieve Similar Chunks
+    # ----------------------------------------------------
+
+    def retrieve_chunks(
+        self,
+        query,
+        k=5
+    ):
+
+        if self.vector_store is None:
+            return []
+
+        docs = self.vector_store.similarity_search(
+            query,
+            k=k
+        )
+
+        return docs
+
+    # ----------------------------------------------------
+    # Number of Papers
+    # ----------------------------------------------------
+
+    def paper_count(self):
+
+        return len(self.parsed_papers)
+
+    # ----------------------------------------------------
+    # List Papers
+    # ----------------------------------------------------
+
+    def list_papers(self):
+
+        return list(self.parsed_papers.keys())
+
+    # ----------------------------------------------------
+    # Reset
+    # ----------------------------------------------------
+
+    def clear(self):
+
+        self.vector_store = None
+
+        self.parsed_papers = {}
 
         response = self.llm.invoke(prompt)
 
