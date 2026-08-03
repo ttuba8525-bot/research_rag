@@ -121,4 +121,4 @@ def answer_query(question, section):
 from search import discover_papers as search_papers
 def discover_papers(topic):
 
-    return discover_papers(topic)
+    return search_papers(topic)
